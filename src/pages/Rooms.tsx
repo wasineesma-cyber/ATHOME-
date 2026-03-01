@@ -10,7 +10,7 @@ import {
   Wind,
   Coffee,
 } from "lucide-react";
-import { cn } from "../components/Layout";
+import { cn } from "../lib/utils";
 
 interface Room {
   id: number;
