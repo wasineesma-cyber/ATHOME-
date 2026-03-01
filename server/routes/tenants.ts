@@ -40,4 +40,41 @@ router.post("/", (req, res) => {
   }
 });
 
+router.put("/:id", (req, res) => {
+  try {
+    const { name, phone, email, room_id, move_in_date } = req.body;
+    const transaction = db.transaction(() => {
+      const old = db.prepare("SELECT room_id FROM tenants WHERE id = ?").get(req.params.id) as { room_id: number | null };
+      if (old?.room_id && old.room_id !== room_id) {
+        db.prepare("UPDATE rooms SET status = 'vacant' WHERE id = ?").run(old.room_id);
+      }
+      db.prepare("UPDATE tenants SET name = ?, phone = ?, email = ?, room_id = ?, move_in_date = ? WHERE id = ?")
+        .run(name, phone, email, room_id || null, move_in_date, req.params.id);
+      if (room_id) {
+        db.prepare("UPDATE rooms SET status = 'occupied' WHERE id = ?").run(room_id);
+      }
+    });
+    transaction();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update tenant" });
+  }
+});
+
+router.delete("/:id", (req, res) => {
+  try {
+    const transaction = db.transaction(() => {
+      const tenant = db.prepare("SELECT room_id FROM tenants WHERE id = ?").get(req.params.id) as { room_id: number | null };
+      if (tenant?.room_id) {
+        db.prepare("UPDATE rooms SET status = 'vacant' WHERE id = ?").run(tenant.room_id);
+      }
+      db.prepare("DELETE FROM tenants WHERE id = ?").run(req.params.id);
+    });
+    transaction();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete tenant" });
+  }
+});
+
 export default router;

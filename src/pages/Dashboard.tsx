@@ -1,129 +1,58 @@
 import { useState, useEffect } from "react";
-import {
-  Users,
-  Home,
-  DollarSign,
-  AlertCircle,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { Users, Home, DollarSign, AlertCircle, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: "ม.ค.", revenue: 40000 },
-  { name: "ก.พ.", revenue: 45000 },
-  { name: "มี.ค.", revenue: 42000 },
-  { name: "เม.ย.", revenue: 50000 },
-  { name: "พ.ค.", revenue: 55000 },
-  { name: "มิ.ย.", revenue: 58000 },
-];
+interface Stats {
+  totalRooms: number;
+  occupiedRooms: number;
+  occupancyRate: number;
+  totalTenants: number;
+  monthlyRevenue: number;
+  pendingInvoices: number;
+}
+
+interface RevenuePoint { name: string; revenue: number; }
 
 export function Dashboard() {
-  const [stats, setStats] = useState({
-    totalRooms: 0,
-    occupiedRooms: 0,
-    occupancyRate: 0,
-    totalTenants: 0,
-    monthlyRevenue: 0,
-    pendingInvoices: 0,
-  });
+  const [stats, setStats] = useState<Stats>({ totalRooms: 0, occupiedRooms: 0, occupancyRate: 0, totalTenants: 0, monthlyRevenue: 0, pendingInvoices: 0 });
+  const [chartData, setChartData] = useState<RevenuePoint[]>([]);
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch stats");
-        return res.json();
-      })
-      .then((data) => setStats(data))
-      .catch((err) => console.error(err));
+    fetch("/api/stats").then((r) => r.json()).then(setStats).catch(() => {});
+    fetch("/api/stats/revenue").then((r) => r.json()).then(setChartData).catch(() => {});
   }, []);
 
   const statCards = [
-    {
-      name: "รายได้รวมเดือนนี้",
-      value: `฿${stats.monthlyRevenue.toLocaleString()}`,
-      icon: DollarSign,
-      change: "+4.75%",
-      changeType: "positive",
-    },
-    {
-      name: "อัตราการเช่า",
-      value: `${stats.occupancyRate}%`,
-      icon: Home,
-      change: "+1.02%",
-      changeType: "positive",
-    },
-    {
-      name: "ผู้เช่าปัจจุบัน",
-      value: stats.totalTenants.toString(),
-      icon: Users,
-      change: "+2",
-      changeType: "positive",
-    },
-    {
-      name: "บิลรอชำระ",
-      value: stats.pendingInvoices.toString(),
-      icon: AlertCircle,
-      change: "-1",
-      changeType: "negative",
-    },
+    { name: "รายได้รวมเดือนนี้", value: `฿${stats.monthlyRevenue.toLocaleString()}`, icon: DollarSign, change: null, changeType: "positive" },
+    { name: "อัตราการเช่า", value: `${stats.occupancyRate}%`, icon: Home, change: `${stats.occupiedRooms}/${stats.totalRooms} ห้อง`, changeType: stats.occupancyRate >= 50 ? "positive" : "negative" },
+    { name: "ผู้เช่าปัจจุบัน", value: stats.totalTenants.toString(), icon: Users, change: null, changeType: "positive" },
+    { name: "บิลรอชำระ", value: stats.pendingInvoices.toString(), icon: AlertCircle, change: null, changeType: stats.pendingInvoices > 0 ? "negative" : "positive" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">
-          ภาพรวมระบบ
-        </h1>
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-zinc-500">
-            อัปเดตล่าสุด: เมื่อสักครู่
-          </span>
-          <button className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">
-            ดาวน์โหลดรายงาน
-          </button>
-        </div>
+        <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">ภาพรวมระบบ</h1>
+        <span className="text-sm text-zinc-500">อัปเดตล่าสุด: เมื่อสักครู่</span>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((item) => (
-          <div
-            key={item.name}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100"
-          >
+          <div key={item.name} className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-emerald-50 rounded-lg">
                 <item.icon className="w-5 h-5 text-emerald-600" />
               </div>
-              <div
-                className={`flex items-center text-sm font-medium ${
-                  item.changeType === "positive"
-                    ? "text-emerald-600"
-                    : "text-red-600"
-                }`}
-              >
-                {item.changeType === "positive" ? (
-                  <ArrowUpRight className="w-4 h-4 mr-1" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4 mr-1" />
-                )}
-                {item.change}
-              </div>
+              {item.change && (
+                <div className={`flex items-center text-sm font-medium ${item.changeType === "positive" ? "text-emerald-600" : "text-red-600"}`}>
+                  {item.changeType === "positive" ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1" />}
+                  {item.change}
+                </div>
+              )}
             </div>
             <div className="mt-4">
               <h3 className="text-sm font-medium text-zinc-500">{item.name}</h3>
-              <p className="text-3xl font-semibold text-zinc-900 mt-1">
-                {item.value}
-              </p>
+              <p className="text-3xl font-semibold text-zinc-900 mt-1">{item.value}</p>
             </div>
           </div>
         ))}
@@ -132,127 +61,64 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-zinc-900">
-              แนวโน้มรายได้
-            </h2>
-            <select className="text-sm border-zinc-200 rounded-lg text-zinc-600 focus:ring-emerald-500 focus:border-emerald-500">
-              <option>6 เดือนล่าสุด</option>
-              <option>ปีนี้</option>
-            </select>
+            <h2 className="text-lg font-semibold text-zinc-900">แนวโน้มรายได้ (6 เดือนล่าสุด)</h2>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={data}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              >
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#e4e4e7"
-                />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#71717a", fontSize: 12 }}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#71717a", fontSize: 12 }}
-                  dx={-10}
-                  tickFormatter={(value) => `฿${value / 1000}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "none",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  }}
-                  formatter={(value: number) => [
-                    `฿${value.toLocaleString()}`,
-                    "รายได้",
-                  ]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} dx={-10}
+                  tickFormatter={(v) => v === 0 ? "฿0" : `฿${v / 1000}k`} />
+                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                  formatter={(value: number) => [`฿${value.toLocaleString()}`, "รายได้"]} />
+                <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-6">
-            กิจกรรมล่าสุด
-          </h2>
-          <div className="space-y-6">
+          <h2 className="text-lg font-semibold text-zinc-900 mb-6">สรุปสถานะห้องพัก</h2>
+          <div className="space-y-4">
             {[
-              {
-                title: "ผู้เช่าใหม่ย้ายเข้า",
-                desc: "ห้อง 102 - สมชาย",
-                time: "2 ชั่วโมงที่แล้ว",
-                icon: Users,
-                color: "text-blue-500",
-                bg: "bg-blue-50",
-              },
-              {
-                title: "ชำระบิลแล้ว",
-                desc: "ห้อง 201 - ฿6,750",
-                time: "5 ชั่วโมงที่แล้ว",
-                icon: DollarSign,
-                color: "text-emerald-500",
-                bg: "bg-emerald-50",
-              },
-              {
-                title: "แจ้งซ่อม",
-                desc: "ห้อง 203 - แอร์ไม่เย็น",
-                time: "1 วันที่แล้ว",
-                icon: AlertCircle,
-                color: "text-amber-500",
-                bg: "bg-amber-50",
-              },
-              {
-                title: "ห้องว่าง",
-                desc: "ห้อง 105 ย้ายออกแล้ว",
-                time: "2 วันที่แล้ว",
-                icon: Home,
-                color: "text-purple-500",
-                bg: "bg-purple-50",
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex">
-                <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full ${item.bg} flex items-center justify-center mr-4`}
-                >
-                  <item.icon className={`w-5 h-5 ${item.color}`} />
+              { label: "ห้องมีผู้เช่า", value: stats.occupiedRooms, total: stats.totalRooms, color: "bg-blue-500" },
+              { label: "ห้องว่าง", value: stats.totalRooms - stats.occupiedRooms, total: stats.totalRooms, color: "bg-emerald-500" },
+            ].map((item) => (
+              <div key={item.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-600">{item.label}</span>
+                  <span className="font-medium text-zinc-900">{item.value} / {item.total} ห้อง</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-900">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-zinc-500">{item.desc}</p>
-                  <p className="text-xs text-zinc-400 mt-1">{item.time}</p>
+                <div className="w-full bg-zinc-100 rounded-full h-2">
+                  <div className={`${item.color} h-2 rounded-full transition-all`}
+                    style={{ width: item.total > 0 ? `${(item.value / item.total) * 100}%` : "0%" }} />
                 </div>
               </div>
             ))}
           </div>
-          <button className="w-full mt-6 py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-            ดูกิจกรรมทั้งหมด &rarr;
-          </button>
+
+          <div className="mt-6 pt-4 border-t border-zinc-100 space-y-3">
+            <h3 className="text-sm font-semibold text-zinc-700">ข้อมูลเพิ่มเติม</h3>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500">ห้องทั้งหมด</span>
+              <span className="font-medium">{stats.totalRooms} ห้อง</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500">ผู้เช่าทั้งหมด</span>
+              <span className="font-medium">{stats.totalTenants} คน</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500">บิลรอชำระ</span>
+              <span className={`font-medium ${stats.pendingInvoices > 0 ? "text-amber-600" : "text-emerald-600"}`}>{stats.pendingInvoices} รายการ</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
