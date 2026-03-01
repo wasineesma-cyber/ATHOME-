@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { cn } from "../components/Layout";
+import { cn } from "../lib/utils";
 import { QRCodeSVG } from "qrcode.react";
 import generatePayload from "promptpay-qr";
 
