@@ -5,6 +5,8 @@ import roomsRouter from "./routes/rooms.js";
 import tenantsRouter from "./routes/tenants.js";
 import invoicesRouter from "./routes/invoices.js";
 import parcelsRouter from "./routes/parcels.js";
+import settingsRouter from "./routes/settings.js";
+import lineNotifyRouter from "./routes/line-notify.js";
 
 async function startServer() {
   const app = express();
@@ -18,6 +20,8 @@ async function startServer() {
   app.use("/api/tenants", tenantsRouter);
   app.use("/api/invoices", invoicesRouter);
   app.use("/api/parcels", parcelsRouter);
+  app.use("/api/settings", settingsRouter);
+  app.use("/api/line-notify", lineNotifyRouter);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

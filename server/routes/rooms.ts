@@ -39,4 +39,13 @@ router.put("/:id", (req, res) => {
   }
 });
 
+router.delete("/:id", (req, res) => {
+  try {
+    db.prepare("DELETE FROM rooms WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete room" });
+  }
+});
+
 export default router;

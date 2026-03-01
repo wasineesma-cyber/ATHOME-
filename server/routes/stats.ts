@@ -31,4 +31,25 @@ router.get("/", (req, res) => {
   }
 });
 
+// Monthly revenue for chart (last 6 months)
+router.get("/revenue", (req, res) => {
+  try {
+    const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const now = new Date();
+    const result = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const m = d.getMonth() + 1;
+      const y = d.getFullYear();
+      const row = db.prepare(
+        "SELECT COALESCE(SUM(total), 0) as revenue FROM invoices WHERE month = ? AND year = ?"
+      ).get(m, y) as { revenue: number };
+      result.push({ name: thaiMonths[m - 1], revenue: row.revenue });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch revenue" });
+  }
+});
+
 export default router;

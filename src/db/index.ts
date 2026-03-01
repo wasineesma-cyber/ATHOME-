@@ -65,7 +65,24 @@ db.exec(`
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     FOREIGN KEY (tenant_id) REFERENCES tenants(id)
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+  );
 `);
+
+// Seed default settings if empty
+const settingsCount = db.prepare("SELECT COUNT(*) as count FROM settings").get() as { count: number };
+if (settingsCount.count === 0) {
+  const setSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+  setSetting.run("dorm_name", "AT HOME เทพมิตร");
+  setSetting.run("promptpay_id", "0812345678");
+  setSetting.run("liff_id", "");
+  setSetting.run("admin_name", "ผู้ดูแลระบบ");
+  setSetting.run("admin_email", "admin@athome.com");
+  setSetting.run("line_notify_token", "");
+}
 
 // Seed initial data if empty
 const roomCount = db.prepare("SELECT COUNT(*) as count FROM rooms").get() as {
